@@ -8,7 +8,7 @@ make scope  (set up cscope) make check (generate check sum).
 
 You will likely need to edit the Makefile to correct the install path etc.
 
-The enable tracing set -DDEBUG in the Makefile.
+To enable tracing set -DDEBUG in the Makefile.
 
 Find will read file names from all the drives (.) or just one (x:) and match to a search string (see cp/m file names)
 and produce a listing output.  The search string is indicated with the key -name [key] and the log file is indicated with
@@ -22,7 +22,7 @@ Find is a notion I got from using linux and coded from scratch with a UI in mind
 macro assembly.  With this new version running in C I may revisit the macro code and update it to a run alike version.
 
 Find will report a system error when it runs off the end of the committed drive list.  On CP/M 3 this should not be an 
-issue.  I am working on a scheam to get the allocated drive list from cp/m and us that to control the search path.
+issue.  I am working on a scheam to get the allocated drive list from cp/m and use that to control the search path.
 
 The future of find is to expand it to exec a worker program to do a few tasks on the file names.  I.e.   find . -name *.c -exec jump 
 around {} \;
