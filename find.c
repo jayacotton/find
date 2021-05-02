@@ -70,7 +70,7 @@ void seterrstat()
 #asm
     ld c, $2d 
     ld e, 255 
-    call bdos
+    call 5 
 #endasm
 // *INDENT-ON*
 } int getversion()
@@ -178,7 +178,7 @@ void initfcb(unsigned char drive)
 
     TRACE("initfcb");
     parsefcb(Fcb, searchkey);
-    Fcb.drive = drive;
+    //Fcb.drive = drive;
     SNAP(Fcb, sizeof(struct fcb), 4);
 }
 
@@ -207,7 +207,7 @@ int searchnext()
 int selectdrive(unsigned char drive)
 {
     TRACE("selectdrive");
-    bdos(CPM_LGIN, 0);
+    bdos(CPM_LGIN, drive);
     return 1;
 }
 
@@ -221,6 +221,8 @@ void checkdrive(unsigned char drive)
     selectdrive(drive);
     if ((i = searchfirst()) != -1)
 	printnames(drive, i);
+	else
+	return;
     while ((i = searchnext()) != -1) {
 	printnames(drive, i);
     }
