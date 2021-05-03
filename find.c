@@ -106,6 +106,8 @@ int existlocal(int drive)
 // *INDENT-ON*
 	return lres;
     }
+    if ((version & 0xff) == 0x31)
+	return 1;
     return 0;
 }
 
@@ -237,7 +239,7 @@ void printnames(unsigned char drive, int index)
 		printf("Out of memory\n");
 		exit(1);
 	    }
-		pname = logp;
+	    pname = logp;
 	    sprintf(pname, "%c:%8s.%3s\0", disk, &name, &ext);
 	    logcount++;
 	    return;
