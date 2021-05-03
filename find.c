@@ -45,9 +45,21 @@ typedef struct config_tbl {
 
 struct fcb Fcb;
 
+typedef struct name_entry {
+    char drive;
+    char col;
+    char name[8];
+    char dot;
+    char ext[3];
+    char end;
+    struct name_entry *next;
+} NAMEENTRY;
+
 char diskbuf[128];		// each directory entry has 4 names in it
 char logfile[14];
 int logflag = 0;
+NAMEENTRY *logp;
+int logcount = 0;
 FILE *log;
 int version;
 char ldrive;
@@ -74,7 +86,7 @@ int existlocal(int drive)
 {
     TRACE("existlocal");
     ldrive = (char) drive;
-    if ((version&0xff) == 0x22) {
+    if ((version & 0xff) == 0x22) {
 // *INDENT-OFF*
 #asm
 	ld	hl,(1)
@@ -103,7 +115,7 @@ int existnet(int drive)
     CONFIGTBL *pp;
 
     TRACE("existnet");
-    if ((version&0xf00) == 0x200) {
+    if ((version & 0xf00) == 0x200) {
 // now look for the drive list from cp/net
 // *INDENT-OFF*
 #asm
@@ -115,7 +127,7 @@ int existnet(int drive)
 	pp = (CONFIGTBL *) lres;
 	if (pp->disk[drive])
 	    return 1;
-    } 
+    }
     return 0;
 }
 
@@ -130,8 +142,9 @@ void seterrstat()
     call 5 
 #endasm
 // *INDENT-ON*
-	return;
-} 
+    return;
+}
+
 int getversion()
 {
 // 22 = cp/m 2.2
@@ -197,7 +210,6 @@ void setlogname(char *name)
 {
     TRACE("setlogname");
     strcpy(logfile, name);
-    log = fopen(logfile, "w");
     logflag++;
 }
 
@@ -207,6 +219,7 @@ char disk;
 char name[9];
 char ext[4];
 char pbuf[80];
+NAMEENTRY *pname;
 void printnames(unsigned char drive, int index)
 {
     TRACE("printnames");
@@ -218,9 +231,27 @@ void printnames(unsigned char drive, int index)
     ext[3] = 0;
     ext[0] &= 0x7f;
     if (logflag) {
-	memset(pbuf, 0, 80);
-	fprintf(log, "%c:%8s.%3s\r", disk, &name, &ext);
-	fflush(log);		// don't trust cp/m
+	if (logp == NULL) {
+	    logp = (NAMEENTRY *) calloc(1, sizeof(NAMEENTRY));
+	    if (logp == 0) {
+		printf("Out of memory\n");
+		exit(1);
+	    }
+		pname = logp;
+	    sprintf(pname, "%c:%8s.%3s\0", disk, &name, &ext);
+	    logcount++;
+	    return;
+	}
+	pname->next = (NAMEENTRY *) calloc(1, sizeof(NAMEENTRY));
+	if (pname->next == 0) {
+	    printf("Out of memory\n");
+	    exit(1);
+	}
+	pname = pname->next;
+	sprintf(pname, "%c:%8s.%3s\0", disk, &name, &ext);
+	logcount++;
+	return;
+
     } else {
 	printf("%c:%8s.%3s\n", disk, &name, &ext);
     }
@@ -243,7 +274,6 @@ void initfcb(unsigned char drive)
     char *p;
     TRACE("initfcb");
     parsefcb(Fcb, searchkey);
-    //Fcb.drive = drive;
     SNAP(Fcb, sizeof(struct fcb), 4);
 }
 
@@ -315,7 +345,9 @@ void Process()
 
 void main(int argc, char *argv[])
 {
+    int i;
     memset(logfile, 0, 14);
+    logp = NULL;
     version = getversion();
     if (version == 0x31)
 	seterrstat();
@@ -323,17 +355,31 @@ void main(int argc, char *argv[])
 	usage();
 	exit(1);
     }
-    if ((argc >= 1) && (argc <= 5)) {
+    if (argc >= 1) {
 	initdrivetab(argv[1]);
-	if (strstr(argv[2], "-NAME")) {
+	if (strstr(argv[2], "-NAME"))
 	    setsearchkey(argv[3]);
-	} else if (strstr(argv[2], "-O")) {
+	if (strstr(argv[4], "-NAME"))
+	    setsearchkey(argv[5]);
+	if (strstr(argv[2], "-O"))
 	    setlogname(argv[3]);
-	} else if (strstr(argv[3], "-O")) {
-	    setlogname(argv[4]);
-	}
+	if (strstr(argv[4], "-O"))
+	    setlogname(argv[5]);
+
 	Process();
     }
-    if (logflag)
+    if (logflag) {
+// delay file open to here, cp/m can't handle changing drive allocations
+// during file scaning
+	log = fopen(logfile, "w");
+	if (log == 0) {
+	    printf("can't make %s\n", logfile);
+	    exit(1);
+	}
+	for (pname = logp; pname = pname->next; pname->next) {
+	    SNAP(pname, 32, 4);
+	    fprintf(log, "%s\r", pname);
+	}
 	fclose(log);
+    }
 }
