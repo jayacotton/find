@@ -371,6 +371,7 @@ void main(int argc, char *argv[])
     if (logflag) {
 // delay file open to here, cp/m can't handle changing drive allocations
 // during file scaning
+	remove(logfile);
 	log = fopen(logfile, "w");
 	if (log == 0) {
 	    printf("can't make %s\n", logfile);
