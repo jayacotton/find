@@ -10,20 +10,51 @@ You will likely need to edit the Makefile to correct the install path etc.
 
 To enable tracing set -DDEBUG in the Makefile.
 
-Find will read file names from all the drives (.) or just one (x:) and match to a search string (see cp/m file names)
-and produce a listing output.  The search string is indicated with the key -name [key] and the log file is indicated with
--o [log file name].
+Usage:
 
-Note: expect to add a drive letter to the log file name, or find will try to place the log on the a: drive.
+```
+C>find . -name *.c
+C:FIND    .C  
+C:CHARIO  .C  
+C:HELLO   .C  
+G:HELLO   .C  
+G:FIND    .C  
+H:RM      .C  
+H:HELLO   .C  
+H:TAIL    .C  
+H:WILDEXP .C  
+I:HELLO   .C  
+I:RM      .C  
+I:TAIL    .C  
+I:WILDEXP .C  
+```
+Running find to collect all the file names on the machine, includeing network mounted drives (if they exist).
+In this example, I trucated the list, I have quite a few files on my drives.
+```
+C>find .
+A:CCP     .SPR
+A:CPM3NET .HLP
+A:CPM2NET .HLP
+A:CPNET3  .HLP
+A:CPNET12 .HLP
+A:HELP    .HLP
+B:ASM     .COM
+................
+J:RTCNTP  .COM
+J:RUNMICRO.COM
+J:XEQ     .COM
+J:ENDLIST .COM
+```
+Here is a practical example of use.  Find all the file names, then count them.  There is a limit to the number of file names
+that can be buffered for the log file.  Due to cp/m's pecueler (primitive) file system, one needs to be very carfull of when
+and where to write log files, and scan directories for names.   I think a real top end is about 1200 to 1400 names.  After that
+expect to run out of memory.
+```
+C>find . -o c:log.log
 
-This command is handy on systems with a large amount of file names, especially on machines with many drives.
-
-Find is a notion I got from using linux and coded from scratch with a UI in mind.  The original code was written in 
-macro assembly.  With this new version running in C I may revisit the macro code and update it to a run alike version.
-
-Find will report a system error when it runs off the end of the committed drive list.  On CP/M 3 this should not be an 
-issue.  I am working on a scheam to get the allocated drive list from cp/m and use that to control the search path.
-
+C>wc c:log.log
+19072 3768 1192 C:LOG.LOG
+```
 The future of find is to expand it to exec a worker program to do a few tasks on the file names.  I.e.   find . -name *.c -exec jump 
 around {} \;
 
