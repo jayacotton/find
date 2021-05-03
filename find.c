@@ -74,7 +74,7 @@ int existlocal(int drive)
 {
     TRACE("existlocal");
     ldrive = (char) drive;
-    if (version == 0x22) {
+    if ((version&0xff) == 0x22) {
 // *INDENT-OFF*
 #asm
 	ld	hl,(1)
@@ -103,7 +103,7 @@ int existnet(int drive)
     CONFIGTBL *pp;
 
     TRACE("existnet");
-    if (version & 0x200) {
+    if ((version&0xf00) == 0x200) {
 // now look for the drive list from cp/net
 // *INDENT-OFF*
 #asm
@@ -113,7 +113,7 @@ int existnet(int drive)
 #endasm
 // *INDENT-ON*
 	pp = (CONFIGTBL *) lres;
-	if (pp->disk[drive] & 0xf00)
+	if (pp->disk[drive])
 	    return 1;
     } 
     return 0;
@@ -130,14 +130,22 @@ void seterrstat()
     call 5 
 #endasm
 // *INDENT-ON*
-} int getversion()
+	return;
+} 
+int getversion()
 {
 // 22 = cp/m 2.2
 // 31 = cp/m 3.1
 // else cp/net
 
     TRACE("getversion");
-    version = bdos(CPM_VERS, 0);
+//*INDENT-OFF*
+#asm
+	ld	c,12
+	call	5
+	ld	(_version),hl
+#endasm
+//*INDENT-ON*
 #ifdef DEBUG
     printf("version %x\n", version);
 #endif
