@@ -31,6 +31,18 @@ char searchkey[13] =
 unsigned char drive_table[16] =
     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
+typedef struct config_tbl {
+    char stat;
+    char id;
+    int disk[16];
+    int con;
+    int list;
+    int index;
+    int header[4];
+    char listdn;
+    char buf[172 - 45];
+} CONFIGTBL;
+
 struct fcb Fcb;
 
 char diskbuf[128];		// each directory entry has 4 names in it
@@ -38,28 +50,73 @@ char logfile[14];
 int logflag = 0;
 FILE *log;
 int version;
+char ldrive;
+int lres;
 
-void usage(){
-printf("Find command by Jay Cotton, V1 4/28/2021\n");
-printf("running on CP/M v%x\n",version);
-printf("\nfind [drive] [flags] [options]\n");
-printf("       drive = <letter>:  or . to match all drives\n");
-printf("       flags = -O for log file\n");
-printf("               -name [file name]\n");
-printf("                      file name can be CP/M wildcard\n");
+void usage()
+{
+    printf("Find command by Jay Cotton, V1 4/28/2021\n");
+    printf("running on CP/M v%x\n", version);
+    printf("\nfind [drive] [flags] [options]\n");
+    printf("       drive = <letter>:  or . to match all drives\n");
+    printf("       flags = -O for log file\n");
+    printf("               -name [file name]\n");
+    printf("                      file name can be CP/M wildcard\n");
 }
+
 // figure out if drive is on the system
+// the methode below only works on cp/m 2.2
+// systems.
+// on cp/m 3 systems we just ignore the drive select
+// fault.
+
 int existlocal(int drive)
 {
     TRACE("existlocal");
-    return 1;
+    ldrive = (char) drive;
+    if (version == 0x22) {
+// *INDENT-OFF*
+#asm
+	ld	hl,(1)
+	ld	a,l
+	and	a,0f0h
+	add	a,3*9	; get address of magic drive select
+	ld	l,a
+	ld	e,0
+	ld	a,(_ldrive)
+	ld	c,a
+; this is a difficult piece of code because there is no call (hl) instruction
+	ld	(_addr),hl
+	db	0cdh
+._addr	dw	0
+	ld	(_lres),hl
+#endasm
+// *INDENT-ON*
+	return lres;
+    }
+    return 0;
 }
 
 // figure out if drive is mounted on the network
 int existnet(int drive)
 {
+    CONFIGTBL *pp;
+
     TRACE("existnet");
-    return 1;
+    if (version & 0x200) {
+// now look for the drive list from cp/net
+// *INDENT-OFF*
+#asm
+	ld	c,045h
+	call	5
+	ld	(_lres),hl
+#endasm
+// *INDENT-ON*
+	pp = (CONFIGTBL *) lres;
+	if (pp->disk[drive] & 0xf00)
+	    return 1;
+    } 
+    return 0;
 }
 
 // with cpm 3 we can ignore drive select errors
@@ -93,31 +150,32 @@ void initdrivetab(char *type)
     int drive;
 
     TRACE("initdrivetab");
-    drive = tolower(*type) - 'A';
+    drive = tolower(*type) - 'a';
+    // mark the drive table empty
+    memset(drive_table, 0xff, 16);
     if (*type != '.')		// do all drives ?
     {
-	// mark the drive table empty
-	memset(drive_table, 0xff, 16);
 	// range check the drive letter and set the table
-	if ((drive >= 0) && (drive <= 16)) {
+	if ((drive >= 0) & (drive <= 16)) {
 	    // determin if the drive is preset befor
-	    // committing it to the list, also need to
-	    // determin if the drive is a network drive,
-	    // needs special handling....
 	    if (existlocal(drive)) {
 		drive_table[drive] = drive;
-	    } else if (existnet(drive)) {
+	    }
+	    if (existnet(drive)) {
 		drive_table[drive] = drive;
 	    }
 	}
     } else {
+	// do all 16 possible drives
 	for (i = 0; i < 16; i++) {
 	    if (existlocal(i)) {
 		drive_table[i] = i;
 	    }
+	    if (existnet(i)) {
+		drive_table[i] = i;
+	    }
 	}
     }
-
 }
 
 void setsearchkey(char *key)
@@ -175,7 +233,6 @@ void setdma()
 void initfcb(unsigned char drive)
 {
     char *p;
-
     TRACE("initfcb");
     parsefcb(Fcb, searchkey);
     //Fcb.drive = drive;
@@ -216,12 +273,14 @@ void checkdrive(unsigned char drive)
 {
     int i;
     TRACE("checkdrive");
+    if (drive_table[drive] >= 16)
+	return;
     setdma();
     initfcb(drive);
     selectdrive(drive);
     if ((i = searchfirst()) != -1)
 	printnames(drive, i);
-	else
+    else
 	return;
     while ((i = searchnext()) != -1) {
 	printnames(drive, i);
@@ -249,7 +308,6 @@ void Process()
 void main(int argc, char *argv[])
 {
     memset(logfile, 0, 14);
-
     version = getversion();
     if (version == 0x31)
 	seterrstat();
