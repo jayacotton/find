@@ -1,8 +1,6 @@
-#CFLAGS	= +cpm -Wall -pragma-include:zpragma.inc
-#LINKOP	= +cpm -create-app -pragma-include:zpragma.inc -DAMALLOC2 
-CFLAGS	= +cpm -Wall --list --c-code-in-asm
-#CFLAGS	= +cpm -Wall -DDEBUG --list --c-code-in-asm
-LINKOP	= +cpm -create-app -m  
+CFLAGS	= +cpm -Wall --list --c-code-in-asm -pragma-include:zpragma.inc
+#CFLAGS	= +cpm -Wall -DDEBUG --list --c-code-in-asm -pragma-include:zpragma.inc
+LINKOP	= +cpm -create-app -m  -pragma-include:zpragma.inc
 DESTDIR = ~/HostFileBdos/c/
 DESTDIR1 = /var/www/html
 SUM = sum
@@ -32,6 +30,7 @@ scope:
 
 install:
 	$(SUDO) $(CP) ./*.COM $(DESTDIR1)/. 
+	$(CP) FIND.COM $(DESTDIR)find.com
 
 check:
 	$(SUM) *.COM
