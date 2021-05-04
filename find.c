@@ -304,8 +304,8 @@ int searchnext()
 int selectdrive(unsigned char drive)
 {
     TRACE("selectdrive");
-    bdos(CPM_LGIN, drive);
-    return 1;
+// cpm3 can return 0 or ff
+    return (bdos(CPM_LGIN, drive));
 }
 
 // process search on drive
@@ -317,7 +317,7 @@ void checkdrive(unsigned char drive)
 	return;
     setdma();
     initfcb(drive);
-    selectdrive(drive);
+    if(selectdrive(drive) != 0) return;
     if ((i = searchfirst()) != -1)
 	printnames(drive, i);
     else
