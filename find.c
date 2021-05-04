@@ -25,6 +25,8 @@ do, in order to reduce the size.
 #include <ctype.h>
 #include "trace.h"
 
+extern int selectdrive(unsigned char);
+
 char searchkey[13] =
     { '?', '?', '?', '?', '?', '?', '?', '?', '.', '?', '?', '?', 0 };
 
@@ -85,7 +87,10 @@ void usage()
 int existlocal(int drive)
 {
     TRACE("existlocal");
+    lres = 0;
     ldrive = (char) drive;
+// for cpm2.2 we have to do the select and dodge the error
+// checking that is built in to select drive
     if ((version & 0xff) == 0x22) {
 // *INDENT-OFF*
 #asm
@@ -104,11 +109,18 @@ int existlocal(int drive)
 	ld	(_lres),hl
 #endasm
 // *INDENT-ON*
-	return lres;
+    } else {
+// for cpm3 and cp/net we just try to select the drive
+// if it returns 0xff we have a problem else all is o.k.
+	if (selectdrive(drive) == 0)
+	    lres = 0;
+	else
+	    lres = 1;
     }
-    if ((version & 0xff) == 0x31)
-	return 1;
-    return 0;
+#ifdef DEBUG
+    printf("existlocal %d\n", lres);
+#endif
+    return lres;
 }
 
 // figure out if drive is mounted on the network
@@ -116,7 +128,9 @@ int existnet(int drive)
 {
     CONFIGTBL *pp;
 
-    TRACE("existnet");
+    TRACE(" existnet ");
+    lres = 0;			// leave this here 
+// cp/net always set the upper byte of version to 0x200
     if ((version & 0xf00) == 0x200) {
 // now look for the drive list from cp/net
 // *INDENT-OFF*
@@ -126,17 +140,25 @@ int existnet(int drive)
 	ld	(_lres),hl
 #endasm
 // *INDENT-ON*
+// lres is a pointer to the cp/net drive table
 	pp = (CONFIGTBL *) lres;
+	lres = 0;
+#ifdef DEBUG
+if(pp->disk[drive])
+printf("%d is network drive\n",drive);
+else
+printf("%d is local drive\n",drive);
+#endif
 	if (pp->disk[drive])
-	    return 1;
+	    lres = 1;
     }
-    return 0;
+    return lres;
 }
 
 // with cpm 3 we can ignore drive select errors
 void seterrstat()
 {
-    TRACE("seterrstat");
+    TRACE(" seterrstat ");
 // *INDENT-OFF* 
 #asm
     ld c, $2d 
@@ -153,7 +175,7 @@ int getversion()
 // 31 = cp/m 3.1
 // else cp/net
 
-    TRACE("getversion");
+    TRACE(" getversion ");
 //*INDENT-OFF*
 #asm
 	ld	c,12
@@ -161,9 +183,6 @@ int getversion()
 	ld	(_version),hl
 #endasm
 //*INDENT-ON*
-#ifdef DEBUG
-    printf("version %x\n", version);
-#endif
     return version;
 }
 
@@ -172,7 +191,7 @@ void initdrivetab(char *type)
     int i;
     int drive;
 
-    TRACE("initdrivetab");
+    TRACE(" initdrivetab ");
     drive = tolower(*type) - 'a';
     // mark the drive table empty
     memset(drive_table, 0xff, 16);
@@ -199,18 +218,23 @@ void initdrivetab(char *type)
 	    }
 	}
     }
+#ifdef DEBUG
+    for (i = 0; i < 16; i++) {
+	printf("drive %c %x\n", i + 'A', drive_table[i]);
+    }
+#endif
 }
 
 void setsearchkey(char *key)
 {
-    TRACE("setsearchkey");
+    TRACE(" setsearchkey ");
     memset(searchkey, 0, 11);
     strcpy(searchkey, key);
 }
 
 void setlogname(char *name)
 {
-    TRACE("setlogname");
+    TRACE(" setlogname ");
     strcpy(logfile, name);
     logflag++;
 }
@@ -224,7 +248,7 @@ char pbuf[80];
 NAMEENTRY *pname;
 void printnames(unsigned char drive, int index)
 {
-    TRACE("printnames");
+    TRACE(" printnames ");
     offset = index * 32;
     disk = drive + 'A';
     strncpy(name, &diskbuf[offset + 1], 8);
@@ -240,7 +264,7 @@ void printnames(unsigned char drive, int index)
 		exit(1);
 	    }
 	    pname = logp;
-	    sprintf(pname, "%c:%8s.%3s\0", disk, &name, &ext);
+	    sprintf(pname, "%c:%8s.%3s\0 ", disk, &name, &ext);
 	    logcount++;
 	    return;
 	}
@@ -257,7 +281,7 @@ void printnames(unsigned char drive, int index)
     } else {
 	printf("%c:%8s.%3s\n", disk, &name, &ext);
     }
-    SNAP(diskbuf, 128, 4);
+    //SNAP(diskbuf, 128, 4);
 #ifdef DEBUG1
     exit(1);
 #endif
@@ -266,7 +290,7 @@ void printnames(unsigned char drive, int index)
 // set the dma address
 void setdma()
 {
-    TRACE("setdma");
+    TRACE(" setdma ");
     bdos(CPM_SDMA, diskbuf);
 }
 
@@ -274,9 +298,9 @@ void setdma()
 void initfcb(unsigned char drive)
 {
     char *p;
-    TRACE("initfcb");
+    TRACE(" initfcb ");
     parsefcb(Fcb, searchkey);
-    SNAP(Fcb, sizeof(struct fcb), 4);
+    //SNAP(Fcb, sizeof(struct fcb), 4);
 }
 
 // get the first directory buffer
@@ -284,7 +308,7 @@ void initfcb(unsigned char drive)
 int searchfirst()
 {
     int ret;
-    TRACE("searchfirst");
+    TRACE(" searchfirst ");
     ret = bdos(CPM_FFST, Fcb);
     TVAL("ret = %d\n", ret);
     return ret;
@@ -294,30 +318,51 @@ int searchfirst()
 int searchnext()
 {
     int ret;
-    TRACE("searchnext");
+    TRACE(" searchnext ");
     ret = bdos(CPM_FNXT, 0);
-    TVAL("ret = %d\n", ret);
+    TVAL("ret=%d\n", ret);
     return ret;
 }
 
 // select the disk drive to search
 int selectdrive(unsigned char drive)
 {
-    TRACE("selectdrive");
+    TRACE(" selectdrive ");
+	ldrive = drive;
 // cpm3 can return 0 or ff
-    return (bdos(CPM_LGIN, drive));
+//    lres = bdos(CPM_LGIN, drive);
+//*INDENT-OFF*
+#asm
+	ld	c,14
+	ld	a,(_ldrive)
+	ld	e,a
+	call	5
+	ld	hl,0
+	ld	l,a
+	ld	(_lres),hl
+#endasm
+//*INDENT-ON*
+#ifdef DEBUG
+    printf("CPM_LGIN returns %d\n", lres);
+#endif
+    if (lres == 0)
+	return 1;
+    return 0;
 }
 
 // process search on drive
 void checkdrive(unsigned char drive)
 {
     int i;
-    TRACE("checkdrive");
+    TRACE(" checkdrive ");
     if (drive_table[drive] >= 16)
 	return;
     setdma();
     initfcb(drive);
-    if(selectdrive(drive) != 0) return;
+// selectdrive is a problem, its not working like the 
+// documentation says it should.
+    if (!selectdrive(drive))
+	return;
     if ((i = searchfirst()) != -1)
 	printnames(drive, i);
     else
@@ -331,14 +376,14 @@ void checkdrive(unsigned char drive)
 void Process()
 {
     int i;
-    TRACE("Process");
+    TRACE(" Process ");
 #ifdef DEBUG
     printf("Looking for %s\n", searchkey);
 #endif
     for (i = 0; i < 16; i++) {
 	if (drive_table[i] <= 16) {
 #ifdef DEBUG
-	    printf("process %c:\n", drive_table[i] + 'A');
+	    printf(" process % c:\n ", drive_table[i] + 'A');
 #endif
 	    checkdrive(drive_table[i]);
 	}
@@ -351,14 +396,21 @@ void main(int argc, char *argv[])
     memset(logfile, 0, 14);
     logp = NULL;
     version = getversion();
-    if (version == 0x31)
+    if ((version & 0xff) == 0x31)
 	seterrstat();
+#ifdef DEBUG
+    printf("argv[1] = %s\n", argv[1]);
+#endif
     if (strstr(argv[1], "-H")) {
 	usage();
 	exit(1);
     }
     if (argc >= 1) {
+#ifdef DEBUG2
+	initdrivetab(".");
+#else
 	initdrivetab(argv[1]);
+#endif
 	if (strstr(argv[2], "-NAME"))
 	    setsearchkey(argv[3]);
 	if (strstr(argv[4], "-NAME"))
@@ -380,7 +432,7 @@ void main(int argc, char *argv[])
 	    exit(1);
 	}
 	for (pname = logp; pname = pname->next; pname->next) {
-	    SNAP(pname, 32, 4);
+	    //SNAP(pname, 32, 4);
 	    fprintf(log, "%s\r", pname);
 	}
 	fclose(log);
