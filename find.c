@@ -66,6 +66,7 @@ FILE *log;
 int version;
 char ldrive;
 int lres;
+int nflag = 0;
 
 void usage()
 {
@@ -144,13 +145,15 @@ int existnet(int drive)
 	pp = (CONFIGTBL *) lres;
 	lres = 0;
 #ifdef DEBUG
-if(pp->disk[drive])
-printf("%d is network drive\n",drive);
-else
-printf("%d is local drive\n",drive);
-#endif
 	if (pp->disk[drive])
+	    printf("%d is network drive\n", drive);
+	else
+	    printf("%d is local drive\n", drive);
+#endif
+	if (pp->disk[drive]){
 	    lres = 1;
+	nflag++;
+	}
     }
     return lres;
 }
@@ -212,13 +215,14 @@ void initdrivetab(char *type)
 	for (i = 0; i < 16; i++) {
 	    if (existlocal(i)) {
 		drive_table[i] = i;
-	    }
+	    } else if ((version == 0x231) && (nflag == 0))
+		drive_table[i] = i;
 	    if (existnet(i)) {
 		drive_table[i] = i;
 	    }
 	}
     }
-#ifdef DEBUG
+#ifdef DEBUG3
     for (i = 0; i < 16; i++) {
 	printf("drive %c %x\n", i + 'A', drive_table[i]);
     }
@@ -328,7 +332,7 @@ int searchnext()
 int selectdrive(unsigned char drive)
 {
     TRACE(" selectdrive ");
-	ldrive = drive;
+    ldrive = drive;
 // cpm3 can return 0 or ff
 //    lres = bdos(CPM_LGIN, drive);
 //*INDENT-OFF*
@@ -361,8 +365,12 @@ void checkdrive(unsigned char drive)
     initfcb(drive);
 // selectdrive is a problem, its not working like the 
 // documentation says it should.
-    if (!selectdrive(drive))
-	return;
+    if (version != 0x231) {
+	if (!selectdrive(drive))
+	    return;
+    } else
+	selectdrive(drive);
+
     if ((i = searchfirst()) != -1)
 	printnames(drive, i);
     else
