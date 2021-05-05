@@ -10,40 +10,49 @@ You will likely need to edit the Makefile to correct the install path etc.
 
 To enable tracing set -DDEBUG in the Makefile.
 
+With the latest push, the command processing has been worked on extensively, and new commands have been added.
+```
+-d[rive] <drive letter>   The expected value is A->P, do not add the ':'.
+-u[ser] <user number>     The expected value is a number between 0 and 15.
+-o[utput] <log file>      The expected value is a file name for the log.
+-n[ame] <search string>   The expected value is a CP/M file name or wildcard.
+.                         Search all drives, expects no value
+-h[elp]                   Print a helpfull message, expects no value.
+```
 Usage:
 
 ```
 C>find . -name *.c
-C:FIND    .C  
-C:CHARIO  .C  
-C:HELLO   .C  
-G:HELLO   .C  
-G:FIND    .C  
-H:RM      .C  
-H:HELLO   .C  
-H:TAIL    .C  
-H:WILDEXP .C  
-I:HELLO   .C  
-I:RM      .C  
-I:TAIL    .C  
-I:WILDEXP .C  
+C0:FIND    .C  
+C0:CHARIO  .C  
+C0:HELLO   .C  
+G0:HELLO   .C  
+G0:FIND    .C  
+H0:RM      .C  
+H0:HELLO   .C  
+H0:TAIL    .C  
+H0:WILDEXP .C  
+I0:HELLO   .C  
+I0:RM      .C  
+I0:TAIL    .C  
+I0:WILDEXP .C  
 ```
 Running find to collect all the file names on the machine, includeing network mounted drives (if they exist).
 In this example, I trucated the list, I have quite a few files on my drives.
 ```
 C>find .
-A:CCP     .SPR
-A:CPM3NET .HLP
-A:CPM2NET .HLP
-A:CPNET3  .HLP
-A:CPNET12 .HLP
-A:HELP    .HLP
-B:ASM     .COM
+A0:CCP     .SPR
+A0:CPM3NET .HLP
+A0:CPM2NET .HLP
+A0:CPNET3  .HLP
+A0:CPNET12 .HLP
+A0:HELP    .HLP
+B0:ASM     .COM
 ................
-J:RTCNTP  .COM
-J:RUNMICRO.COM
-J:XEQ     .COM
-J:ENDLIST .COM
+J0:RTCNTP  .COM
+J0:RUNMICRO.COM
+J0:XEQ     .COM
+J0:ENDLIST .COM
 ```
 Here is a practical example of use.  Find all the file names, then count them.  There is a limit to the number of file names
 that can be buffered for the log file.  Due to cp/m's pecueler (primitive) file system, one needs to be very carfull of when
@@ -51,7 +60,6 @@ and where to write log files, and scan directories for names.   I think a real t
 expect to run out of memory.
 ```
 C>find . -o c:log.log
-
 C>wc c:log.log
 19072 3768 1192 C:LOG.LOG
 ```
