@@ -17,12 +17,12 @@ With the latest push, the command processing has been worked on extensively, and
 -o[utput] <log file>      The expected value is a file name for the log.
 -n[ame] <search string>   The expected value is a CP/M file name or wildcard.
 .                         Search all drives, expects no value
--h[elp]                   Print a helpfull message, expects no value.
+-h[elp]                   Print a helpful message, expects no value.
 ```
-I should point out that user does not perminetly change the user number, unless find crashes
-somehow.  So if find gets a grose error, you my need to say  c:user 0 or somesuch.
+I should point out that user does not permanently change the user number, unless find crashes
+somehow.  So if find gets a gross error, you my need to say  c:user 0 or somesuch.
 
-Find assumes user 0 unless told otherwise.  This can be an issue for say user 4.  A find to locat user 4
+Find assumes user 0 unless told otherwise.  This can be an issue for say user 4.  A find to locate user 4
 files started as user 4 will find files for user 0 unless you specify user 4 in your command.
 
 Usage:
@@ -43,8 +43,8 @@ I0:RM      .C
 I0:TAIL    .C  
 I0:WILDEXP .C  
 ```
-Running find to collect all the file names on the machine, includeing network mounted drives (if they exist).
-In this example, I trucated the list, I have quite a few files on my drives.
+Running find to collect all the file names on the machine, including network mounted drives (if they exist).
+In this example, I truncated the list, I have quite a few files on my drives.
 ```
 C>find .
 A0:CCP     .SPR
@@ -61,7 +61,7 @@ J0:XEQ     .COM
 J0:ENDLIST .COM
 ```
 Here is a practical example of use.  Find all the file names, then count them.  There is a limit to the number of file names
-that can be buffered for the log file.  Due to cp/m's pecueler (primitive) file system, one needs to be very carfull of when
+that can be buffered for the log file.  Due to cp/m's peculier (primitive) file system, one needs to be very careful of when
 and where to write log files, and scan directories for names.   I think a real top end is about 1200 to 1400 names.  After that
 expect to run out of memory.
 ```
