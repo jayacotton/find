@@ -1,5 +1,4 @@
-/*
-Find for CP/M coded in 'c' z88dk.
+/* Find for CP/M coded in 'c' z88dk.
 
 find  [starting-point...] [expression]
 
@@ -19,6 +18,7 @@ do, in order to reduce the size.
 
 */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,16 +27,18 @@ do, in order to reduce the size.
 
 extern int selectdrive(unsigned char);
 
+// default search key, matches all file names
 char searchkey[13] =
     { '?', '?', '?', '?', '?', '?', '?', '?', '.', '?', '?', '?', 0 };
 
+// The local drive table.  ff = nothing there
 unsigned char drive_table[16] =
     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
 typedef struct config_tbl {
     char stat;
     char id;
-    int disk[16];
+    int disk[16];		// The list of network mounted drives
     int con;
     int list;
     int index;
@@ -48,35 +50,38 @@ typedef struct config_tbl {
 struct fcb Fcb;
 
 typedef struct name_entry {
-    char drive;
-    char col;
-    char name[8];
-    char dot;
-    char ext[3];
-    char end;
-    struct name_entry *next;
+    char drive;			// drive letter
+    char usr;			// user number
+    char col;			// a :
+    char name[8];		// the name
+    char dot;			// a .
+    char ext[3];		// the extension
+    char end;			// a zero
+    struct name_entry *next;	// pointer to the next one of these
 } NAMEENTRY;
 
 char diskbuf[128];		// each directory entry has 4 names in it
-char logfile[14];
-int logflag = 0;
-NAMEENTRY *logp;
-int logcount = 0;
-FILE *log;
-int version;
-char ldrive;
-int lres;
-int nflag = 0;
-
+char logfile[14];		// name of log file
+int logflag = 0;		// logging is requested
+NAMEENTRY *logp;		// Point to log list root
+int logcount = 0;		// A count of log entries
+FILE *log;			// the Log file
+int version;			// OPsys version number
+char ldrive;			// general drive passin
+int lres;			// general res passback
+int nflag = 0;			// gets set after first network drive
+char user = 0;			// user number
+char olduser;
 void usage()
 {
     printf("Find command by Jay Cotton, V1 4/28/2021\n");
     printf("running on CP/M v%x\n", version);
-    printf("\nfind [drive] [flags] [options]\n");
-    printf("       drive = <letter>:  or . to match all drives\n");
-    printf("       flags = -O for log file\n");
-    printf("               -name [file name]\n");
-    printf("                      file name can be CP/M wildcard\n");
+    printf("\nfind <drive> [flags] [options]\n");
+    printf("       -drive <d> or just '.' for all drives\n");
+    printf("       -name  <name string> uses CP/M wildcard\n");
+    printf("       -user  <number>      Search in a user space\n");
+    printf("       -output <log file>\n");
+    printf("       -help	        print this output \n");
 }
 
 // figure out if drive is on the system
@@ -150,9 +155,9 @@ int existnet(int drive)
 	else
 	    printf("%d is local drive\n", drive);
 #endif
-	if (pp->disk[drive]){
+	if (pp->disk[drive]) {
 	    lres = 1;
-	nflag++;
+	    nflag++;
 	}
     }
     return lres;
@@ -244,12 +249,15 @@ void setlogname(char *name)
 }
 
 // print file names from the directory buffer
-int offset;
-char disk;
-char name[9];
-char ext[4];
-char pbuf[80];
-NAMEENTRY *pname;
+// globals that make c faster
+int offset;			// FCB offset in the disk record
+char disk;			// disk # always zero
+// working buffers
+char name[9];			// file name
+char ext[4];			// file extension
+char pbuf[80];			// working buffer
+NAMEENTRY *pname;		// temporary pointer 
+
 void printnames(unsigned char drive, int index)
 {
     TRACE(" printnames ");
@@ -268,7 +276,7 @@ void printnames(unsigned char drive, int index)
 		exit(1);
 	    }
 	    pname = logp;
-	    sprintf(pname, "%c:%8s.%3s\0 ", disk, &name, &ext);
+	    sprintf(pname, "%c%d:%8s.%3s\0 ", disk,user, &name, &ext);
 	    logcount++;
 	    return;
 	}
@@ -278,17 +286,13 @@ void printnames(unsigned char drive, int index)
 	    exit(1);
 	}
 	pname = pname->next;
-	sprintf(pname, "%c:%8s.%3s\0", disk, &name, &ext);
+	sprintf(pname, "%c%d:%8s.%3s\0", disk,user, &name, &ext);
 	logcount++;
 	return;
 
     } else {
-	printf("%c:%8s.%3s\n", disk, &name, &ext);
+	printf("%c%d:%8s.%3s\n", disk,user, &name, &ext);
     }
-    //SNAP(diskbuf, 128, 4);
-#ifdef DEBUG1
-    exit(1);
-#endif
 }
 
 // set the dma address
@@ -333,8 +337,6 @@ int selectdrive(unsigned char drive)
 {
     TRACE(" selectdrive ");
     ldrive = drive;
-// cpm3 can return 0 or ff
-//    lres = bdos(CPM_LGIN, drive);
 //*INDENT-OFF*
 #asm
 	ld	c,14
@@ -398,51 +400,61 @@ void Process()
     }
 }
 
+extern int mygetopt(int, char **, void *);
+extern void *optlist;
+extern char *optarg;
+
 void main(int argc, char *argv[])
 {
-    int i;
+    int opt;
     memset(logfile, 0, 14);
     logp = NULL;
     version = getversion();
     if ((version & 0xff) == 0x31)
 	seterrstat();
-#ifdef DEBUG
-    printf("argv[1] = %s\n", argv[1]);
-#endif
-    if (strstr(argv[1], "-H")) {
-	usage();
-	exit(1);
-    }
     if (argc >= 1) {
-#ifdef DEBUG2
-	initdrivetab(".");
-#else
-	initdrivetab(argv[1]);
-#endif
-	if (strstr(argv[2], "-NAME"))
-	    setsearchkey(argv[3]);
-	if (strstr(argv[4], "-NAME"))
-	    setsearchkey(argv[5]);
-	if (strstr(argv[2], "-O"))
-	    setlogname(argv[3]);
-	if (strstr(argv[4], "-O"))
-	    setlogname(argv[5]);
-
+	while ((opt = mygetopt(argc, argv, &optlist)) != -1) {
+	    switch (opt) {
+	    case 4:		// -drive
+		initdrivetab(optarg);
+		break;
+	    case 6:		// '.' (search all drives)
+		initdrivetab(".");
+		break;
+	    case 1:		// -name 
+		setsearchkey(optarg);
+		break;
+	    case 2:		// -output
+		setlogname(optarg);
+		break;
+	    case 3:		// -user
+		user = atoi(optarg);
+		olduser = bdos(32,0xff);
+		bdos(32,user);
+		break;
+	    case 5:		// -help
+		break;
+	    default:
+		usage();
+		exit(1);
+		break;
+	    }
+	}
 	Process();
-    }
-    if (logflag) {
+	if (logflag) {
 // delay file open to here, cp/m can't handle changing drive allocations
 // during file scaning
-	remove(logfile);
-	log = fopen(logfile, "w");
-	if (log == 0) {
-	    printf("can't make %s\n", logfile);
-	    exit(1);
+	    remove(logfile);
+	    log = fopen(logfile, "w");
+	    if (log == 0) {
+		printf("can't make %s\n", logfile);
+		exit(1);
+	    }
+	    for (pname = logp; pname = pname->next; pname->next) {
+		fprintf(log, "%s\r", pname);
+	    }
+	    fclose(log);
 	}
-	for (pname = logp; pname = pname->next; pname->next) {
-	    //SNAP(pname, 32, 4);
-	    fprintf(log, "%s\r", pname);
-	}
-	fclose(log);
+	if(user) bdos(32,olduser); // hope we don't crash
     }
 }
