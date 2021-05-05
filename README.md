@@ -22,6 +22,9 @@ With the latest push, the command processing has been worked on extensively, and
 I should point out that user does not perminetly change the user number, unless find crashes
 somehow.  So if find gets a grose error, you my need to say  c:user 0 or somesuch.
 
+Find assumes user 0 unless told otherwise.  This can be an issue for say user 4.  A find to locat user 4
+files started as user 4 will find files for user 0 unless you specify user 4 in your command.
+
 Usage:
 
 ```
