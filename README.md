@@ -19,6 +19,9 @@ With the latest push, the command processing has been worked on extensively, and
 .                         Search all drives, expects no value
 -h[elp]                   Print a helpfull message, expects no value.
 ```
+I should point out that user does not perminetly change the user number, unless find crashes
+somehow.  So if find gets a grose error, you my need to say  c:user 0 or somesuch.
+
 Usage:
 
 ```
