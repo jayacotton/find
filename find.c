@@ -433,7 +433,6 @@ void main(int argc, char *argv[])
 		bdos(32,user);
 		break;
 	    case 5:		// -help
-		break;
 	    default:
 		usage();
 		exit(1);
