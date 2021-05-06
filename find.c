@@ -72,9 +72,10 @@ int lres;			// general res passback
 int nflag = 0;			// gets set after first network drive
 char user = 0;			// user number
 char olduser;
+char *fstr = "Find command by Jay Cotton, V1"; 
 void usage()
 {
-    printf("Find command by Jay Cotton, V1 4/28/2021\n");
+	printf("%s %s,%s\n",fstr,__DATE__,__TIME__);
     printf("running on CP/M v%x\n", version);
     printf("\nfind <drive> [flags] [options]\n");
     printf("       -drive <d> or just '.' for all drives\n");
@@ -90,6 +91,32 @@ void usage()
 // on cp/m 3 systems we just ignore the drive select
 // fault.
 
+
+char biospd = 9;
+char areg = 0; 
+int bcreg = 0;
+int dereg = 0;
+int hlreg = 0;
+
+int lbios(char drive)
+{
+	biospd = 9;
+	bcreg = 14;
+	hlreg = 0;
+	dereg = drive;
+//*INDENT-OFF*
+#asm
+	ld	c,50
+	ld	de,_biospd
+	call	5
+	; set hl with result
+	ld	h,0
+	ld	l,a
+	ret
+#endasm
+//*INDENT-ON*
+	return 0;
+}
 int existlocal(int drive)
 {
     TRACE("existlocal");
@@ -118,10 +145,19 @@ int existlocal(int drive)
     } else {
 // for cpm3 and cp/net we just try to select the drive
 // if it returns 0xff we have a problem else all is o.k.
+#ifdef OLD 
 	if (selectdrive(drive) == 0)
 	    lres = 0;
 	else
 	    lres = 1;
+#else
+	lres = lbios(drive);
+    printf("existlocal %c:%d\n",drive+'A', lres);
+printf("reg  a: 0x%02x\n",areg);
+printf("reg bc: 0x%04x\n",bcreg);
+printf("reg de: 0x%04x\n",dereg);
+printf("reg hl: 0x%04x\n",hlreg);
+#endif
     }
 #ifdef DEBUG
     printf("existlocal %d\n", lres);
