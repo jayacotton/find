@@ -9,20 +9,21 @@
 // -USER <number>
 // -HELP
 
-char *optlist[6][2] = {
-    { "-N", 1 },
-    { "-O", 2 },
-    { "-U", 3 },
-    { "-D", 4 },
-    { "-H", 5 },
-    { ".", 6 }
+char *optlist[7][3] = {
+    { "-N", 2, 1 },	// -name
+    { "-O", 2, 2 },	// -output
+    { "-U", 2, 3 },	// -user
+    { "-D", 2, 4 },	// -drive
+    { "-H", 1, 5 },	// -help
+    { ".", 1, 6 },	// .
+    { "-A", 1, 7 }	// -alluser
 };
 
-#define LENLIST 6
+#define LENLIST 7
 int getoptindex = 1;
 char *optarg;
 
-int mygetopt(int argc, char *argv[], char *list[LENLIST][2])
+int mygetopt(int argc, char *argv[], char *list[LENLIST][3])
 {
 // given argv[x] find that in list[n][0]
 // when found return a token 
@@ -38,8 +39,8 @@ int mygetopt(int argc, char *argv[], char *list[LENLIST][2])
 	}			// so it must be a '-'
 	if (strstr(argv[getoptindex], optlist[i][0])) {
 	    optarg = argv[getoptindex + 1];
-	    getoptindex += 2;
-	    return (optlist[i][1]);
+	    getoptindex += optlist[i][1];
+	    return (optlist[i][2]);
 	}
     }
     return (-1);

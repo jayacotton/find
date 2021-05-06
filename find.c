@@ -71,16 +71,32 @@ char ldrive;			// general drive passin
 int lres;			// general res passback
 int nflag = 0;			// gets set after first network drive
 char user = 0;			// user number
-char olduser;
-char *fstr = "Find command by Jay Cotton, V1"; 
+char olduser;			// save the old user number
+int alluser = 0;		// search all user numbers
+char *fstr = "Find command by Jay Cotton, V1";
+char biospd = 9;
+char areg = 0;
+int bcreg = 0;
+int dereg = 0;
+int hlreg = 0;
+int offset;			// FCB offset in the disk record
+char disk;			// disk # always zero
+// working buffers
+char name[9];			// file name
+char ext[4];			// file extension
+char pbuf[80];			// working buffer
+NAMEENTRY *pname;		// temporary pointer 
+
+
 void usage()
 {
-	printf("%s %s,%s\n",fstr,__DATE__,__TIME__);
+    printf("%s %s,%s\n", fstr, __DATE__, __TIME__);
     printf("running on CP/M v%x\n", version);
     printf("\nfind <drive> [flags] [options]\n");
     printf("       -drive <d> or just '.' for all drives\n");
     printf("       -name  <name string> uses CP/M wildcard\n");
     printf("       -user  <number>      Search in a user space\n");
+    printf("       -alluser	Search all user spaces \n");
     printf("       -output <log file>\n");
     printf("       -help	        print this output \n");
 }
@@ -91,19 +107,12 @@ void usage()
 // on cp/m 3 systems we just ignore the drive select
 // fault.
 
-
-char biospd = 9;
-char areg = 0; 
-int bcreg = 0;
-int dereg = 0;
-int hlreg = 0;
-
 int lbios(char drive)
 {
-	biospd = 9;
-	bcreg = 14;
-	hlreg = 0;
-	dereg = drive;
+    biospd = 9;
+    bcreg = 14;
+    hlreg = 0;
+    dereg = drive;
 //*INDENT-OFF*
 #asm
 	ld	c,50
@@ -115,8 +124,9 @@ int lbios(char drive)
 	ret
 #endasm
 //*INDENT-ON*
-	return 0;
+    return 0;
 }
+
 int existlocal(int drive)
 {
     TRACE("existlocal");
@@ -145,18 +155,18 @@ int existlocal(int drive)
     } else {
 // for cpm3 and cp/net we just try to select the drive
 // if it returns 0xff we have a problem else all is o.k.
-#ifdef OLD 
+#ifdef OLD
 	if (selectdrive(drive) == 0)
 	    lres = 0;
 	else
 	    lres = 1;
 #else
 	lres = lbios(drive);
-    printf("existlocal %c:%d\n",drive+'A', lres);
-printf("reg  a: 0x%02x\n",areg);
-printf("reg bc: 0x%04x\n",bcreg);
-printf("reg de: 0x%04x\n",dereg);
-printf("reg hl: 0x%04x\n",hlreg);
+	printf("existlocal %c:%d\n", drive + 'A', lres);
+	printf("reg  a: 0x%02x\n", areg);
+	printf("reg bc: 0x%04x\n", bcreg);
+	printf("reg de: 0x%04x\n", dereg);
+	printf("reg hl: 0x%04x\n", hlreg);
 #endif
     }
 #ifdef DEBUG
@@ -285,14 +295,6 @@ void setlogname(char *name)
 }
 
 // print file names from the directory buffer
-// globals that make c faster
-int offset;			// FCB offset in the disk record
-char disk;			// disk # always zero
-// working buffers
-char name[9];			// file name
-char ext[4];			// file extension
-char pbuf[80];			// working buffer
-NAMEENTRY *pname;		// temporary pointer 
 
 void printnames(unsigned char drive, int index)
 {
@@ -312,7 +314,7 @@ void printnames(unsigned char drive, int index)
 		exit(1);
 	    }
 	    pname = logp;
-	    sprintf(pname, "%c%d:%8s.%3s\0 ", disk,user, &name, &ext);
+	    sprintf(pname, "%c%d:%8s.%3s\0 ", disk, user, &name, &ext);
 	    logcount++;
 	    return;
 	}
@@ -322,12 +324,12 @@ void printnames(unsigned char drive, int index)
 	    exit(1);
 	}
 	pname = pname->next;
-	sprintf(pname, "%c%d:%8s.%3s\0", disk,user, &name, &ext);
+	sprintf(pname, "%c%d:%8s.%3s\0", disk, user, &name, &ext);
 	logcount++;
 	return;
 
     } else {
-	printf("%c%d:%8s.%3s\n", disk,user, &name, &ext);
+	printf("%c%d:%8s.%3s\n", disk, user, &name, &ext);
     }
 }
 
@@ -344,7 +346,6 @@ void initfcb(unsigned char drive)
     char *p;
     TRACE(" initfcb ");
     parsefcb(Fcb, searchkey);
-    //SNAP(Fcb, sizeof(struct fcb), 4);
 }
 
 // get the first directory buffer
@@ -443,6 +444,7 @@ extern char *optarg;
 void main(int argc, char *argv[])
 {
     int opt;
+    int i;
     memset(logfile, 0, 14);
     logp = NULL;
     version = getversion();
@@ -465,8 +467,12 @@ void main(int argc, char *argv[])
 		break;
 	    case 3:		// -user
 		user = atoi(optarg);
-		olduser = bdos(32,0xff);
-		bdos(32,user);
+		olduser = bdos(32, 0xff);
+		bdos(32, user);
+		break;
+	    case 7:		// -alluser
+		alluser++;
+		olduser = bdos(32, 0xff);
 		break;
 	    case 5:		// -help
 	    default:
@@ -475,7 +481,15 @@ void main(int argc, char *argv[])
 		break;
 	    }
 	}
-	Process();
+	if (alluser) {
+	    for (i = 0; i < 15; i++) {
+		user=i;
+		bdos(32, i);	// cycle through all users
+		Process();	// process the list.
+	    }
+	    bdos(32, olduser);
+	} else
+	    Process();
 	if (logflag) {
 // delay file open to here, cp/m can't handle changing drive allocations
 // during file scaning
@@ -490,6 +504,7 @@ void main(int argc, char *argv[])
 	    }
 	    fclose(log);
 	}
-	if(user) bdos(32,olduser); // hope we don't crash
+	if (user)
+	    bdos(32, olduser);	// hope we don't crash
     }
 }
