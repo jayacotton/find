@@ -14,6 +14,7 @@ With the latest push, the command processing has been worked on extensively, and
 ```
 -d[rive] <drive letter>   The expected value is A->P, do not add the ':'.
 -u[ser] <user number>     The expected value is a number between 0 and 15.
+-a[lluser]                No expected value.  Set search for all user spaces.
 -o[utput] <log file>      The expected value is a file name for the log.
 -n[ame] <search string>   The expected value is a CP/M file name or wildcard.
 .                         Search all drives, expects no value
