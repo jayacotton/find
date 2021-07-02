@@ -1,6 +1,8 @@
-CFLAGS	= +cpm -Wall -pragma-include:zpragma.inc
-#CFLAGS	= +cpm -Wall -DDEBUG --list --c-code-in-asm -pragma-include:zpragma.inc
-LINKOP	= +cpm -create-app -m  -pragma-include:zpragma.inc
+CFLAGS	= +cpm -Wall -DOLD -pragma-include:zpragma.inc
+#CFLAGS	= +cpm -Wall -DNEW -pragma-include:zpragma.inc
+#CFLAGS	= +cpm -Wall --list --c-code-in-asm -pragma-include:zpragma.inc
+LINKOP	= +cpm -create-app -m -pragma-include:zpragma.inc
+#LINKOP	= +cpm -create-app -m  -pragma-include:zpragma.inc
 DESTDIR = ~/HostFileBdos/c/
 DESTDIR1 = /var/www/html
 SUM = sum
@@ -21,6 +23,7 @@ mygetopt.o: mygetopt.c
 	zcc $(CFLAGS) -c mygetopt.c
 
 find.o: find.c
+	date > date.h
 	zcc $(CFLAGS) -c find.c
 
 snaplib.o: snaplib.c
