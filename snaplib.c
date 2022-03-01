@@ -3,7 +3,7 @@
 //! \file snaplib.c
 //! \brief Memory snapshot Implemtation file.
 //! \details 
-//!	
+//!
 //!        options include:  show ascii text
 //!                          show dec values TBD
 //!                          show hex values
@@ -15,10 +15,10 @@
 //!        int     flags   TBD
 //!
 //! \version 1.0
-//! \date	Thur May 02 11:22:44 PDT 2019
+//! \date Thur May 02 11:22:44 PDT 2019
 //! \par Revision history
-//! 	UNK First version published at sourceforge.com a very long time ago.
-//!	5/2/19 this version is mostly like what I put on sourceforge.com.
+//! UNK First version published at sourceforge.com a very long time ago.
+//! 5/2/19 this version is mostly like what I put on sourceforge.com.
 //!
 //! \author Jay Cotton
 //! \copyright
@@ -60,62 +60,57 @@
 #define SnapDec 8
 #define SnapTight 0x20
 
-int snapmem(here,addr,size,flags,msg)
-unsigned char *here;
-unsigned char *addr;
-int size;
-int flags;
-char *msg;
+int snapmem(unsigned char *here, unsigned char *addr, int size, int flags,
+            char *msg)
 {
-int i;
-int j;
-unsigned char *where;
-int ascii;
-int dism;
-int dec;
+    int i;
+    int j;
+    unsigned char *where;
+    int ascii;
+    int dism;
+    int dec;
 
-	where = addr;
-	ascii = 0;
-	dism = 0;
-	dec = 0;
+    where = addr;
+    ascii = 0;
+    dism = 0;
+    dec = 0;
 
-	printf("Snapshot taken at: %04x %s\n",here,msg);
-	if(flags & SnapAscii){
-		ascii++;
-	}
-	/* raw snap */
-	if(flags & SnapDec){
-	}
-	/* snap hex is defalut */
-	j = 0;
-	for(i=0;i<size;i++){
-		if(j==0) printf("0x%04x: ",where);
-		if(ascii){
-			if(SnapTight){
-				if(isalpha(*where)){
-					printf(" %c ",*where++);
-				}else{
-					printf("%02x ",*where++);
-				}
-			}
-			else {
-				if(isalpha(*where)){
-					printf("   %c ",*where++);
-				}else{
-					printf("0x%02x ",*where++);
-				}
-			}
-		}else if(dec) {
-		}else {
-			printf("0x%02x ",*where++);
-		}
-		j++;
-		if(j==12){
-			printf("\n");
-			j = 0;
-		}
-	}
-	printf("\n");
-	return 0;
+    printf("Snapshot taken at: %04x %s\n", here, msg);
+    if (flags & SnapAscii) {
+        ascii++;
+    }
+    /* raw snap */
+    if (flags & SnapDec) {
+    }
+    /* snap hex is defalut */
+    j = 0;
+    for (i = 0; i < size; i++) {
+        if (j == 0)
+            printf("0x%04x: ", where);
+        if (ascii) {
+            if (SnapTight) {
+                if (isalpha(*where)) {
+                    printf(" %c ", *where++);
+                } else {
+                    printf("%02x ", *where++);
+                }
+            } else {
+                if (isalpha(*where)) {
+                    printf("   %c ", *where++);
+                } else {
+                    printf("0x%02x ", *where++);
+                }
+            }
+        } else if (dec) {
+        } else {
+            printf("0x%02x ", *where++);
+        }
+        j++;
+        if (j == 12) {
+            printf("\n");
+            j = 0;
+        }
+    }
+    printf("\n");
+    return 0;
 }
-
