@@ -526,7 +526,7 @@ void main(int argc, char *argv[])
     version = getversion();
     if ((version & 0xff) == 0x31)
 	seterrstat();
-    if (argc >= 1) {
+    if (argc >= 2) {
 	while ((opt = mygetopt(argc, argv, &optlist)) != -1) {
 	    switch (opt) {
 	    case 4:		// -drive
@@ -582,5 +582,7 @@ void main(int argc, char *argv[])
 	}
 	if (user)
 	    bdos(32, olduser);	// hope we don't crash
+    }else {  
+		usage();
     }
 }
