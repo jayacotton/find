@@ -2,15 +2,15 @@
 
 find  [starting-point...] [expression]
 
-	starting-point		"."  or "c:"  
-		where  "."  is all drives
-		and "c:" just look on this drive
-		if omited works the same as "."
+    starting-point        "."  or "c:"  
+        where  "."  is all drives
+        and "c:" just look on this drive
+        if omited works the same as "."
 
-	expression 		"*.c" or "*.com"  etc.
-			-name ....   (assumed...)
+    expression         "*.c" or "*.com"  etc.
+            -name ....   (assumed...)
 
-	-O [file name]  	create a file and list output to that
+    -O [file name]      create a file and list output to that
 
 Remember that in CP/M land we have 64k of ram, and 1/4 of that is used
 by CP/M itself.  So, we limit the number of things that the program can
@@ -28,7 +28,7 @@ do, in order to reduce the size.
 extern int selectdrive(unsigned char);
 
 // default search key, matches all file names
-char searchkey[13] =
+unsigned char searchkey[13] =
     { '?', '?', '?', '?', '?', '?', '?', '?', '.', '?', '?', '?', 0 };
 
 // The local drive table.  ff = nothing there
@@ -70,8 +70,8 @@ int version;			// OPsys version number
 char ldrive;			// general drive passin
 int lres;			// general res passback
 int nflag = 0;			// gets set after first network drive
-char user = 0;			// user number
-char olduser;			// save the old user number
+int user = 0;			// user number
+int olduser;			// save the old user number
 int alluser = 0;		// search all user numbers
 char *fstr = "Find command by Jay Cotton, V1";
 char biospd = 9;
@@ -90,19 +90,19 @@ NAMEENTRY *pname;		// temporary pointer
 
 void usage()
 {
-    printf("%s %s,%s\n", fstr, __DATE__, __TIME__);
+    printf("%s %s, %s\n", fstr, __DATE__, __TIME__);
     printf("running on CP/M v%x\n", version);
     printf("\nfind <drive> [flags] [options]\n");
     printf("       -drive <d> or just '.' for all drives\n");
-    printf("       -name  <name string> uses CP/M wildcard\n");
-    printf("       -user  <number>      Search in a user space\n");
-    printf("       -alluser	Search all user spaces \n");
+    printf("       -name <name string> uses CP/M wildcard\n");
+    printf("       -user <number> search in a user space\n");
+    printf("       -alluser search all user spaces\n");
     printf("       -output <log file>\n");
-    printf("       -help	        print this output \n");
+    printf("       -help print this output\n");
 }
 
 // figure out if drive is on the system
-// the methode below only works on cp/m 2.2
+// the method below only works on cp/m 2.2
 // systems.
 // on cp/m 3 systems we just ignore the drive select
 // fault.
@@ -113,18 +113,29 @@ int lbios(char drive)
     bcreg = 14;
     hlreg = 0;
     dereg = drive;
+
+    do {
 //*INDENT-OFF*
+#ifdef __SCCZ80
 #asm
-	ld	c,50
-	ld	de,_biospd
-	call	5
-	; set hl with result
-	ld	h,0
-	ld	l,a
-	ret
+    ld    c,50
+    ld    de,_biospd
+    jp    5
+    ; hl is set with return
 #endasm
+#endif
+#ifdef __SDCC
+__asm
+    ld      c,50
+    ld      de,_biospd
+    jp      5
+    ; hl is set with return
+__endasm;
+#endif
+
 //*INDENT-ON*
-    return 0;
+    } while (0);
+    return;
 }
 
 int existlocal(int drive)
@@ -135,23 +146,42 @@ int existlocal(int drive)
 // for cpm2.2 we have to do the select and dodge the error
 // checking that is built in to select drive
     if ((version & 0xff) == 0x22) {
+	do {
 // *INDENT-OFF*
+#ifdef __SCCZ80
 #asm
-	ld	hl,(1)
-	ld	a,l
-	and	a,0f0h
-	add	a,3*9	; get address of magic drive select
-	ld	l,a
-	ld	e,0
-	ld	a,(_ldrive)
-	ld	c,a
-; this is a difficult piece of code because there is no call (hl) instruction
-	ld	(_addr),hl
-	db	0cdh
-._addr	dw	0
-	ld	(_lres),hl
+    ld      hl,(1)
+    ld      a,l
+    and     a,0f0h
+    add     a,3*9       ; get address of bios seldsk
+    ld      l,a
+    ld      e,0
+    ld      a,(_ldrive)
+    ld      c,a
+; use jp (hl) because there is no call (hl) instruction
+    EXTERN  l_jphl      ; intrinsic function for sccz80
+    call    l_jphl
+    ld      (_lres),hl
 #endasm
+#endif
+#ifdef __SDCC
+__asm
+    ld      hl,(1)
+    ld      a,l
+    and     a,0f0h
+    add     a,3*9       ; get address of bios seldsk
+    ld      l,a
+    ld      e,0
+    ld      a,(_ldrive)
+    ld      c,a
+    ; use jp (hl) because there is no call (hl) instruction
+    EXTERN  l_jphl      ; external function for sdcc
+    call    l_jphl
+    ld      (_lres),hl
+__endasm;
+#endif
 // *INDENT-ON*
+	} while (0);
     } else {
 // for cpm3 and cp/net we just try to select the drive
 // if it returns 0xff we have a problem else all is o.k.
@@ -185,14 +215,26 @@ int existnet(int drive)
 // cp/net always set the upper byte of version to 0x200
     if ((version & 0xf00) == 0x200) {
 // now look for the drive list from cp/net
+	do {
 // *INDENT-OFF*
+#ifdef __SCCZ80
 #asm
-	ld	c,045h
-	call	5
-	ld	(_lres),hl
+    ld      c,045h
+    call    5
+    ld      (_lres),hl
 #endasm
+#endif
+#ifdef __SDCC
+__asm
+    ld      c,045h
+    call    5
+    ld      (_lres),hl
+__endasm;
+#endif
 // *INDENT-ON*
-// lres is a pointer to the cp/net drive table
+	}
+	while (0);
+	// lres is a pointer to the cp/net drive table
 	pp = (CONFIGTBL *) lres;
 	lres = 0;
 #ifdef DEBUG
@@ -206,6 +248,7 @@ int existnet(int drive)
 	    nflag++;
 	}
     }
+
     return lres;
 }
 
@@ -213,13 +256,24 @@ int existnet(int drive)
 void seterrstat()
 {
     TRACE(" seterrstat ");
+    do {
 // *INDENT-OFF* 
+#ifdef __SCCZ80
 #asm
-    ld c, $2d 
-    ld e, 255 
-    call 5 
+    ld      c,02dh
+    ld      e,255
+    jp      5
 #endasm
+#endif
+#ifdef __SDCC
+__asm
+    ld      c,02dh
+    ld      e,0ffh
+    jp      5
+__endasm;
+#endif
 // *INDENT-ON*
+    } while (0);
     return;
 }
 
@@ -230,13 +284,24 @@ int getversion()
 // else cp/net
 
     TRACE(" getversion ");
+    do {
 //*INDENT-OFF*
+#ifdef __SCCZ80
 #asm
-	ld	c,12
-	call	5
-	ld	(_version),hl
+    ld      c,12
+    call    5
+    ld      (_version),hl
 #endasm
+#endif
+#ifdef __SDCC
+__asm
+    ld      c,12
+    call    5
+    ld      (_version),hl
+__endasm;
+#endif
 //*INDENT-ON*
+    } while (0);
     return version;
 }
 
@@ -314,7 +379,8 @@ void printnames(unsigned char drive, int index)
 		exit(1);
 	    }
 	    pname = logp;
-	    sprintf(pname, "%c%d:%8s.%3s\0 ", disk, user, &name, &ext);
+	    sprintf((char *) pname, "%c%d:%8s.%3s\0 ", disk, user, &name,
+		    &ext);
 	    logcount++;
 	    return;
 	}
@@ -324,7 +390,7 @@ void printnames(unsigned char drive, int index)
 	    exit(1);
 	}
 	pname = pname->next;
-	sprintf(pname, "%c%d:%8s.%3s\0", disk, user, &name, &ext);
+	sprintf((char *) pname, "%c%d:%8s.%3s\0", disk, user, &name, &ext);
 	logcount++;
 	return;
 
@@ -337,15 +403,14 @@ void printnames(unsigned char drive, int index)
 void setdma()
 {
     TRACE(" setdma ");
-    bdos(CPM_SDMA, diskbuf);
+    bdos(CPM_SDMA, (int) &diskbuf);
 }
 
 // set up the fcb for file search
 void initfcb(unsigned char drive)
 {
-    char *p;
     TRACE(" initfcb ");
-    parsefcb(Fcb, searchkey);
+    parsefcb((struct fcb *) &Fcb, searchkey);
 }
 
 // get the first directory buffer
@@ -354,7 +419,7 @@ int searchfirst()
 {
     int ret;
     TRACE(" searchfirst ");
-    ret = bdos(CPM_FFST, Fcb);
+    ret = bdos(CPM_FFST, (int) &Fcb);
     TVAL("ret = %d\n", ret);
     return ret;
 }
@@ -364,7 +429,7 @@ int searchnext()
 {
     int ret;
     TRACE(" searchnext ");
-    ret = bdos(CPM_FNXT, 0);
+    ret = bdos(CPM_FNXT, (int) 0);
     TVAL("ret=%d\n", ret);
     return ret;
 }
@@ -374,17 +439,28 @@ int selectdrive(unsigned char drive)
 {
     TRACE(" selectdrive ");
     ldrive = drive;
+    do {
 //*INDENT-OFF*
+#ifdef __SCCZ80
 #asm
-	ld	c,14
-	ld	a,(_ldrive)
-	ld	e,a
-	call	5
-	ld	hl,0
-	ld	l,a
-	ld	(_lres),hl
+    ld      c,14
+    ld      a,(_ldrive)
+    ld      e,a
+    call    5
+    ld      (_lres),hl
 #endasm
+#endif
+#ifdef __SDCC
+__asm
+    ld      c,14
+    ld      a,(_ldrive)
+    ld      e,a
+    call    5
+    ld      (_lres),hl
+__endasm;
+#endif
 //*INDENT-ON*
+    } while (0);
 #ifdef DEBUG
     printf("CPM_LGIN returns %d\n", lres);
 #endif
@@ -430,7 +506,7 @@ void Process()
     for (i = 0; i < 16; i++) {
 	if (drive_table[i] <= 16) {
 #ifdef DEBUG
-	    printf(" process % c:\n ", drive_table[i] + 'A');
+	    printf(" process %c:\n ", drive_table[i] + 'A');
 #endif
 	    checkdrive(drive_table[i]);
 	}
@@ -483,7 +559,7 @@ void main(int argc, char *argv[])
 	}
 	if (alluser) {
 	    for (i = 0; i < 15; i++) {
-		user=i;
+		user = i;
 		bdos(32, i);	// cycle through all users
 		Process();	// process the list.
 	    }

@@ -1,10 +1,12 @@
 This is a find command for cp/m written for z88dk tool chain.
 
 To build, copy the repo to your linux machine, (or possibly cygwin).
-and type make.
+and type `make`.
 
-Other make commands are, make just (indent code) make install (put code in /var/www/html) make clean (clear stuff out)
-make scope  (set up cscope) make check (generate check sum).
+Other make commands are, `make justify` (indent code) `make install` (put code in /var/www/html) `make clean` (clear stuff out)
+`make scope` (set up cscope) `make check` (generate check sum).
+
+To build for 8085 CPU use `make find85`. The resulting binary will be named `FIND85.COM`, which can be renamed as desired before use.
 
 You will likely need to edit the Makefile to correct the install path etc.
 

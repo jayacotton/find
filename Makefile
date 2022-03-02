@@ -1,13 +1,17 @@
-CFLAGS	= +cpm -Wall -DOLD -pragma-include:zpragma.inc
-#CFLAGS	= +cpm -Wall -DNEW -pragma-include:zpragma.inc
-#CFLAGS	= +cpm -Wall --list --c-code-in-asm -pragma-include:zpragma.inc
-LINKOP	= +cpm -create-app -m -pragma-include:zpragma.inc
-#LINKOP	= +cpm -create-app -m  -pragma-include:zpragma.inc
+#CFLAGS   = +cpm -Wall -D__CLASSIC -DOLD -pragma-include:zpragma.inc
+#CFLAGS	= +cpm -Wall --list --c-code-in-asm -D__CLASSIC -DOLD -pragma-include:zpragma.inc
+CFLAGS  = +cpm -compiler=sdcc -Wall -D__CLASSIC -DOLD --max-allocs-per-node200000 -pragma-include:zpragma.inc
+
+LINKOP   = +cpm -create-app -m -pragma-include:zpragma.inc
+
+CFLAGS85 = +cpm -clib=8085 -Wall -D__CLASSIC -DOLD -pragma-include:zpragma.inc
+LINKOP85 = +cpm -clib=8085 -create-app -m -pragma-include:zpragma.inc
+
 DESTDIR = ~/HostFileBdos/c/
 DESTDIR1 = /var/www/html
 SUM = sum
 CP = cp
-INDENT = indent -kr
+INDENT = indent -kr -ut
 SUDO = sudo
 
 # define SNAP to null when debugging is done.
@@ -29,12 +33,23 @@ find.o: find.c
 snaplib.o: snaplib.c
 	zcc $(CFLAGS) -c snaplib.c
 
-clean:
-	$(RM) *.o *.err *.lis *.def *.lst *.sym *.exe *.COM  *.map find
+find85: find85.o mygetopt85.o
+	zcc $(LINKOP85) -ofind85 find85.o mygetopt85.o
 
-just:
+mygetopt85.o: mygetopt.c
+	zcc $(CFLAGS85) -o mygetopt85.o -c mygetopt.c
+
+find85.o: find.c
+	date > date.h
+	zcc $(CFLAGS85) -o find85.o -c find.c
+
+clean:
+	$(RM) *.o *.err *.lis *.def *.lst *.sym *.exe *.COM  *.map find find85
+
+justify:
 	$(INDENT) find.c
 	$(INDENT) mygetopt.c
+	$(INDENT) snaplib.c
 
 scope:
 	cscope
