@@ -38,7 +38,7 @@ unsigned char drive_table[16] =
 typedef struct config_tbl {
     char stat;
     char id;
-    int disk[16];               // The list of network mounted drives
+    int disk[16];		// The list of network mounted drives
     int con;
     int list;
     int index;
@@ -50,42 +50,42 @@ typedef struct config_tbl {
 struct fcb Fcb;
 
 typedef struct name_entry {
-    char drive;                 // drive letter
-    char usr;                   // user number
-    char col;                   // a :
-    char name[8];               // the name
-    char dot;                   // a .
-    char ext[3];                // the extension
-    char end;                   // a zero
-    struct name_entry *next;    // pointer to the next one of these
+    char drive;			// drive letter
+    char usr;			// user number
+    char col;			// a :
+    char name[8];		// the name
+    char dot;			// a .
+    char ext[3];		// the extension
+    char end;			// a zero
+    struct name_entry *next;	// pointer to the next one of these
 } NAMEENTRY;
 
-char diskbuf[128];              // each directory entry has 4 names in it
-char logfile[14];               // name of log file
-int logflag = 0;                // logging is requested
-NAMEENTRY *logp;                // Point to log list root
-int logcount = 0;               // A count of log entries
-FILE *log;                      // the Log file
-int version;                    // OPsys version number
-char ldrive;                    // general drive passin
-int lres;                       // general res passback
-int nflag = 0;                  // gets set after first network drive
-int user = 0;                   // user number
-int olduser;                    // save the old user number
-int alluser = 0;                // search all user numbers
+char diskbuf[128];		// each directory entry has 4 names in it
+char logfile[14];		// name of log file
+int logflag = 0;		// logging is requested
+NAMEENTRY *logp;		// Point to log list root
+int logcount = 0;		// A count of log entries
+FILE *log;			// the Log file
+int version;			// OPsys version number
+char ldrive;			// general drive passin
+int lres;			// general res passback
+int nflag = 0;			// gets set after first network drive
+int user = 0;			// user number
+int olduser;			// save the old user number
+int alluser = 0;		// search all user numbers
 char *fstr = "Find command by Jay Cotton, V1";
 char biospd = 9;
 char areg = 0;
 int bcreg = 0;
 int dereg = 0;
 int hlreg = 0;
-int offset;                     // FCB offset in the disk record
-char disk;                      // disk # always zero
+int offset;			// FCB offset in the disk record
+char disk;			// disk # always zero
 // working buffers
-char name[9];                   // file name
-char ext[4];                    // file extension
-char pbuf[80];                  // working buffer
-NAMEENTRY *pname;               // temporary pointer 
+char name[9];			// file name
+char ext[4];			// file extension
+char pbuf[80];			// working buffer
+NAMEENTRY *pname;		// temporary pointer 
 
 
 void usage()
@@ -146,7 +146,7 @@ int existlocal(int drive)
 // for cpm2.2 we have to do the select and dodge the error
 // checking that is built in to select drive
     if ((version & 0xff) == 0x22) {
-        do {
+	do {
 // *INDENT-OFF*
 #ifdef __SCCZ80
 #asm
@@ -185,22 +185,22 @@ __asm
 __endasm;
 #endif
 // *INDENT-ON*
-        } while (0);
+	} while (0);
     } else {
 // for cpm3 and cp/net we just try to select the drive
 // if it returns 0xff we have a problem else all is o.k.
 #ifdef OLD
-        if (selectdrive(drive) == 0)
-            lres = 0;
-        else
-            lres = 1;
+	if (selectdrive(drive) == 0)
+	    lres = 0;
+	else
+	    lres = 1;
 #else
-        lres = lbios(drive);
-        printf("existlocal %c:%d\n", drive + 'A', lres);
-        printf("reg  a: 0x%02x\n", areg);
-        printf("reg bc: 0x%04x\n", bcreg);
-        printf("reg de: 0x%04x\n", dereg);
-        printf("reg hl: 0x%04x\n", hlreg);
+	lres = lbios(drive);
+	printf("existlocal %c:%d\n", drive + 'A', lres);
+	printf("reg  a: 0x%02x\n", areg);
+	printf("reg bc: 0x%04x\n", bcreg);
+	printf("reg de: 0x%04x\n", dereg);
+	printf("reg hl: 0x%04x\n", hlreg);
 #endif
     }
 #ifdef DEBUG
@@ -215,11 +215,11 @@ int existnet(int drive)
     CONFIGTBL *pp;
 
     TRACE(" existnet ");
-    lres = 0;                   // leave this here 
+    lres = 0;			// leave this here 
 // cp/net always set the upper byte of version to 0x200
     if ((version & 0xf00) == 0x200) {
 // now look for the drive list from cp/net
-        do {
+	do {
 // *INDENT-OFF*
 #ifdef __SCCZ80
 #asm
@@ -236,21 +236,21 @@ __asm
 __endasm;
 #endif
 // *INDENT-ON*
-        }
-        while (0);
-        // lres is a pointer to the cp/net drive table
-        pp = (CONFIGTBL *) lres;
-        lres = 0;
+	}
+	while (0);
+	// lres is a pointer to the cp/net drive table
+	pp = (CONFIGTBL *) lres;
+	lres = 0;
 #ifdef DEBUG
-        if (pp->disk[drive])
-            printf("%d is network drive\n", drive);
-        else
-            printf("%d is local drive\n", drive);
+	if (pp->disk[drive])
+	    printf("%d is network drive\n", drive);
+	else
+	    printf("%d is local drive\n", drive);
 #endif
-        if (pp->disk[drive]) {
-            lres = 1;
-            nflag++;
-        }
+	if (pp->disk[drive]) {
+	    lres = 1;
+	    nflag++;
+	}
     }
 
     return lres;
@@ -318,33 +318,33 @@ void initdrivetab(char *type)
     drive = tolower(*type) - 'a';
     // mark the drive table empty
     memset(drive_table, 0xff, 16);
-    if (*type != '.')           // do all drives ?
+    if (*type != '.')		// do all drives ?
     {
-        // range check the drive letter and set the table
-        if ((drive >= 0) & (drive <= 16)) {
-            // determin if the drive is preset befor
-            if (existlocal(drive)) {
-                drive_table[drive] = drive;
-            }
-            if (existnet(drive)) {
-                drive_table[drive] = drive;
-            }
-        }
+	// range check the drive letter and set the table
+	if ((drive >= 0) & (drive <= 16)) {
+	    // determin if the drive is preset befor
+	    if (existlocal(drive)) {
+		drive_table[drive] = drive;
+	    }
+	    if (existnet(drive)) {
+		drive_table[drive] = drive;
+	    }
+	}
     } else {
-        // do all 16 possible drives
-        for (i = 0; i < 16; i++) {
-            if (existlocal(i)) {
-                drive_table[i] = i;
-            } else if ((version == 0x231) && (nflag == 0))
-                drive_table[i] = i;
-            if (existnet(i)) {
-                drive_table[i] = i;
-            }
-        }
+	// do all 16 possible drives
+	for (i = 0; i < 16; i++) {
+	    if (existlocal(i)) {
+		drive_table[i] = i;
+	    } else if ((version == 0x231) && (nflag == 0))
+		drive_table[i] = i;
+	    if (existnet(i)) {
+		drive_table[i] = i;
+	    }
+	}
     }
 #ifdef DEBUG3
     for (i = 0; i < 16; i++) {
-        printf("drive %c %x\n", i + 'A', drive_table[i]);
+	printf("drive %c %x\n", i + 'A', drive_table[i]);
     }
 #endif
 }
@@ -376,30 +376,30 @@ void printnames(unsigned char drive, int index)
     ext[3] = 0;
     ext[0] &= 0x7f;
     if (logflag) {
-        if (logp == NULL) {
-            logp = (NAMEENTRY *) calloc(1, sizeof(NAMEENTRY));
-            if (logp == 0) {
-                printf("Out of memory\n");
-                exit(1);
-            }
-            pname = logp;
-            sprintf((char *) pname, "%c%d:%8s.%3s\0 ", disk, user, &name,
-                    &ext);
-            logcount++;
-            return;
-        }
-        pname->next = (NAMEENTRY *) calloc(1, sizeof(NAMEENTRY));
-        if (pname->next == 0) {
-            printf("Out of memory\n");
-            exit(1);
-        }
-        pname = pname->next;
-        sprintf((char *) pname, "%c%d:%8s.%3s\0", disk, user, &name, &ext);
-        logcount++;
-        return;
+	if (logp == NULL) {
+	    logp = (NAMEENTRY *) calloc(1, sizeof(NAMEENTRY));
+	    if (logp == 0) {
+		printf("Out of memory\n");
+		exit(1);
+	    }
+	    pname = logp;
+	    sprintf((char *) pname, "%c%d:%8s.%3s\0 ", disk, user, &name,
+		    &ext);
+	    logcount++;
+	    return;
+	}
+	pname->next = (NAMEENTRY *) calloc(1, sizeof(NAMEENTRY));
+	if (pname->next == 0) {
+	    printf("Out of memory\n");
+	    exit(1);
+	}
+	pname = pname->next;
+	sprintf((char *) pname, "%c%d:%8s.%3s\0", disk, user, &name, &ext);
+	logcount++;
+	return;
 
     } else {
-        printf("%c%d:%8s.%3s\n", disk, user, &name, &ext);
+	printf("%c%d:%8s.%3s\n", disk, user, &name, &ext);
     }
 }
 
@@ -469,7 +469,7 @@ __endasm;
     printf("CPM_LGIN returns %d\n", lres);
 #endif
     if (lres == 0)
-        return 1;
+	return 1;
     return 0;
 }
 
@@ -479,23 +479,23 @@ void checkdrive(unsigned char drive)
     int i;
     TRACE(" checkdrive ");
     if (drive_table[drive] >= 16)
-        return;
+	return;
     setdma();
     initfcb(drive);
 // selectdrive is a problem, its not working like the 
 // documentation says it should.
     if (version != 0x231) {
-        if (!selectdrive(drive))
-            return;
+	if (!selectdrive(drive))
+	    return;
     } else
-        selectdrive(drive);
+	selectdrive(drive);
 
     if ((i = searchfirst()) != -1)
-        printnames(drive, i);
+	printnames(drive, i);
     else
-        return;
+	return;
     while ((i = searchnext()) != -1) {
-        printnames(drive, i);
+	printnames(drive, i);
     }
 }
 
@@ -508,12 +508,12 @@ void Process()
     printf("Looking for %s\n", searchkey);
 #endif
     for (i = 0; i < 16; i++) {
-        if (drive_table[i] <= 16) {
+	if (drive_table[i] <= 16) {
 #ifdef DEBUG
-            printf(" process %c:\n ", drive_table[i] + 'A');
+	    printf(" process %c:\n ", drive_table[i] + 'A');
 #endif
-            checkdrive(drive_table[i]);
-        }
+	    checkdrive(drive_table[i]);
+	}
     }
 }
 
@@ -529,62 +529,62 @@ void main(int argc, char *argv[])
     logp = NULL;
     version = getversion();
     if ((version & 0xff) == 0x31)
-        seterrstat();
+	seterrstat();
     if (argc >= 1) {
-        while ((opt = mygetopt(argc, argv, &optlist)) != -1) {
-            switch (opt) {
-            case 4:            // -drive
-                initdrivetab(optarg);
-                break;
-            case 6:            // '.' (search all drives)
-                initdrivetab(".");
-                break;
-            case 1:            // -name 
-                setsearchkey(optarg);
-                break;
-            case 2:            // -output
-                setlogname(optarg);
-                break;
-            case 3:            // -user
-                user = atoi(optarg);
-                olduser = bdos(32, 0xff);
-                bdos(32, user);
-                break;
-            case 7:            // -alluser
-                alluser++;
-                olduser = bdos(32, 0xff);
-                break;
-            case 5:            // -help
-            default:
-                usage();
-                exit(1);
-                break;
-            }
-        }
-        if (alluser) {
-            for (i = 0; i < 15; i++) {
-                user = i;
-                bdos(32, i);    // cycle through all users
-                Process();      // process the list.
-            }
-            bdos(32, olduser);
-        } else
-            Process();
-        if (logflag) {
+	while ((opt = mygetopt(argc, argv, &optlist)) != -1) {
+	    switch (opt) {
+	    case 4:		// -drive
+		initdrivetab(optarg);
+		break;
+	    case 6:		// '.' (search all drives)
+		initdrivetab(".");
+		break;
+	    case 1:		// -name 
+		setsearchkey(optarg);
+		break;
+	    case 2:		// -output
+		setlogname(optarg);
+		break;
+	    case 3:		// -user
+		user = atoi(optarg);
+		olduser = bdos(32, 0xff);
+		bdos(32, user);
+		break;
+	    case 7:		// -alluser
+		alluser++;
+		olduser = bdos(32, 0xff);
+		break;
+	    case 5:		// -help
+	    default:
+		usage();
+		exit(1);
+		break;
+	    }
+	}
+	if (alluser) {
+	    for (i = 0; i < 15; i++) {
+		user = i;
+		bdos(32, i);	// cycle through all users
+		Process();	// process the list.
+	    }
+	    bdos(32, olduser);
+	} else
+	    Process();
+	if (logflag) {
 // delay file open to here, cp/m can't handle changing drive allocations
 // during file scaning
-            remove(logfile);
-            log = fopen(logfile, "w");
-            if (log == 0) {
-                printf("can't make %s\n", logfile);
-                exit(1);
-            }
-            for (pname = logp; pname = pname->next; pname->next) {
-                fprintf(log, "%s\r", pname);
-            }
-            fclose(log);
-        }
-        if (user)
-            bdos(32, olduser);  // hope we don't crash
+	    remove(logfile);
+	    log = fopen(logfile, "w");
+	    if (log == 0) {
+		printf("can't make %s\n", logfile);
+		exit(1);
+	    }
+	    for (pname = logp; pname = pname->next; pname->next) {
+		fprintf(log, "%s\r", pname);
+	    }
+	    fclose(log);
+	}
+	if (user)
+	    bdos(32, olduser);	// hope we don't crash
     }
 }

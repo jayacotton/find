@@ -61,7 +61,7 @@
 #define SnapTight 0x20
 
 int snapmem(unsigned char *here, unsigned char *addr, int size, int flags,
-            char *msg)
+	    char *msg)
 {
     int i;
     int j;
@@ -77,7 +77,7 @@ int snapmem(unsigned char *here, unsigned char *addr, int size, int flags,
 
     printf("Snapshot taken at: %04x %s\n", here, msg);
     if (flags & SnapAscii) {
-        ascii++;
+	ascii++;
     }
     /* raw snap */
     if (flags & SnapDec) {
@@ -85,31 +85,31 @@ int snapmem(unsigned char *here, unsigned char *addr, int size, int flags,
     /* snap hex is defalut */
     j = 0;
     for (i = 0; i < size; i++) {
-        if (j == 0)
-            printf("0x%04x: ", where);
-        if (ascii) {
-            if (SnapTight) {
-                if (isalpha(*where)) {
-                    printf(" %c ", *where++);
-                } else {
-                    printf("%02x ", *where++);
-                }
-            } else {
-                if (isalpha(*where)) {
-                    printf("   %c ", *where++);
-                } else {
-                    printf("0x%02x ", *where++);
-                }
-            }
-        } else if (dec) {
-        } else {
-            printf("0x%02x ", *where++);
-        }
-        j++;
-        if (j == 12) {
-            printf("\n");
-            j = 0;
-        }
+	if (j == 0)
+	    printf("0x%04x: ", where);
+	if (ascii) {
+	    if (SnapTight) {
+		if (isalpha(*where)) {
+		    printf(" %c ", *where++);
+		} else {
+		    printf("%02x ", *where++);
+		}
+	    } else {
+		if (isalpha(*where)) {
+		    printf("   %c ", *where++);
+		} else {
+		    printf("0x%02x ", *where++);
+		}
+	    }
+	} else if (dec) {
+	} else {
+	    printf("0x%02x ", *where++);
+	}
+	j++;
+	if (j == 12) {
+	    printf("\n");
+	    j = 0;
+	}
     }
     printf("\n");
     return 0;

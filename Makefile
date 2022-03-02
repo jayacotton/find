@@ -11,7 +11,7 @@ DESTDIR = ~/HostFileBdos/c/
 DESTDIR1 = /var/www/html
 SUM = sum
 CP = cp
-INDENT = indent -kr -nut
+INDENT = indent -kr -ut
 SUDO = sudo
 
 # define SNAP to null when debugging is done.
