@@ -153,16 +153,14 @@ int existlocal(int drive)
     ld      hl,(1)
     ld      a,l
     and     a,0f0h
-    add     a,3*9       ; get address of magic drive select
+    add     a,3*9       ; get address of bios seldsk
     ld      l,a
     ld      e,0
     ld      a,(_ldrive)
     ld      c,a
-; this is a difficult piece of code because there is no call (hl) instruction
-    ld      (_addr),hl
-    DEFB    0cdh
-._addr
-    DEFW    0
+; use jp (hl) because there is no call (hl) instruction
+    EXTERN  l_jphl      ; intrinsic function for sccz80
+    call    l_jphl
     ld      (_lres),hl
 #endasm
 #endif
@@ -171,16 +169,14 @@ __asm
     ld      hl,(1)
     ld      a,l
     and     a,0f0h
-    add     a,3*9       ; get address of magic drive select
+    add     a,3*9       ; get address of bios seldsk
     ld      l,a
     ld      e,0
     ld      a,(_ldrive)
     ld      c,a
-    ; this is a difficult piece of code because there is no call (hl) instruction
-    ld      (_addr),hl
-    DEFB    0cdh
-._addr
-    DEFW    0
+    ; use jp (hl) because there is no call (hl) instruction
+    EXTERN  l_jphl      ; external function for sdcc
+    call    l_jphl
     ld      (_lres),hl
 __endasm;
 #endif

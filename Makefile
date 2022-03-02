@@ -1,6 +1,6 @@
 #CFLAGS   = +cpm -Wall -D__CLASSIC -DOLD -pragma-include:zpragma.inc
 #CFLAGS	= +cpm -Wall --list --c-code-in-asm -D__CLASSIC -DOLD -pragma-include:zpragma.inc
-CFLAGS  = +cpm -compiler=sdcc -Wall -D__CLASSIC -DOLD --max-allocs-per-node100000 -pragma-include:zpragma.inc
+CFLAGS  = +cpm -compiler=sdcc -Wall -D__CLASSIC -DOLD --max-allocs-per-node200000 -pragma-include:zpragma.inc
 
 LINKOP   = +cpm -create-app -m -pragma-include:zpragma.inc
 
